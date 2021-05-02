@@ -133,6 +133,18 @@ fi
 standalone="no"
 drivercount=""
 
+# Edit
+scrypt="no"
+
+AC_ARG_ENABLE([scrypt],
+	[AC_HELP_STRING([--enable-scrypt],[Compile support for scrypt mining (default disabled)])],
+	[scrypt=$enableval]
+	)
+if test "x$scrypt" = xyes; then
+	AC_DEFINE([USE_SCRYPT], [1], [Defined to 1 if scrypt support is wanted])
+fi
+AM_CONDITIONAL([HAS_SCRYPT], [test x$scrypt = xyes])
+
 ants1="no"
 
 AC_ARG_ENABLE([ants1],
