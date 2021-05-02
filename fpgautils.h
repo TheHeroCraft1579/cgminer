@@ -21,10 +21,17 @@ extern int _serial_detect(struct device_drv *drv, detectone_func_t, autoscan_fun
 	_serial_detect(drv, detectone, autoscan, true)
 #define serial_detect_auto(drv, detectone, autoscan)  \
 	_serial_detect(drv, detectone, autoscan, false)
+/* Edit */
+#define serial_detect_iauto(drv, detectone, autoscan)  \
+        _serial_detect(drv, detectone, autoscan, false)
+
 #define serial_detect(drv, detectone)  \
 	_serial_detect(drv, detectone, NULL, false)
 extern int serial_autodetect_devserial(detectone_func_t, const char *prodname);
 extern int serial_autodetect_udev(detectone_func_t, const char *prodname);
+
+/* Edit */
+extern int serial_open_ex(const char *devpath, unsigned long baud, signed short timeout, signed short minbytes, bool purge, bool win32overlapped);
 
 extern int serial_open(const char *devpath, unsigned long baud, signed short timeout, bool purge);
 extern ssize_t _serial_read(int fd, char *buf, size_t buflen, char *eol);

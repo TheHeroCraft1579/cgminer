@@ -556,6 +556,18 @@ if test "x$forcecombo" = xyes; then
 	standalone="no"
 fi
 
+gridseed="no"
+
+AC_ARG_ENABLE([gridseed],
+        [AC_HELP_STRING([--enable-gridseed],[Compile support for GridSeed (default disabled)])],
+        [gridseed=$enableval]
+        )
+if test "x$gridseed" = xyes; then
+        AC_DEFINE([USE_FPGA_SERIAL], [1], [Defined to 1 if serial support required])
+        AC_DEFINE([USE_GRIDSEED], [1], [Defined to 1 if GridSeed support is wanted])
+fi
+AM_CONDITIONAL([HAS_GRIDSEED], [test x$gridseed = xyes])
+
 curses="auto"
 
 AC_ARG_WITH([curses],
@@ -582,7 +594,7 @@ fi
 
 
 #Add a new device to this list if it needs libusb, along with a no on the end.
-if test x$avalon$avalon2$avalon4$avalon7$avalon8$avalon_miner$bitforce$bitfury$blockerupter$modminer$bflsc$icarus$hashfast$hashratio$klondike$drillbit$cointerra$ants1$ants3 != xnonononononononononononononononononono; then
+if test x$avalon$avalon2$avalon4$avalon7$avalon8$avalon_miner$bitforce$bitfury$blockerupter$modminer$bflsc$icarus$hashfast$hashratio$klondike$drillbit$cointerra$ants1$ants3$gridseed != xnononononononononononononononononononono; then
 	want_usbutils=true
 else
 	want_usbutils=false
@@ -594,13 +606,19 @@ else
 	want_libbitfury=false
 fi
 
+if test x$gridseed$zeus != xnono; then
+        want_libudev=true
+else
+        want_libudev=false
+fi
+
 if test x$avalon2$avalon4$avalon7$avalon8$avalon_miner$hashratio != xnononononono; then
 	want_crc16=true
 else
 	want_crc16=false
 fi
 
-AM_CONDITIONAL([NEED_FPGAUTILS], [test x$modminer != xno])
+AM_CONDITIONAL([NEED_FPGAUTILS], [test x$modminer$gridseed != xnono])
 AM_CONDITIONAL([WANT_USBUTILS], [test x$want_usbutils != xfalse])
 AM_CONDITIONAL([NEED_LIBZ], [test x$bitmain_soc != xno])
 AM_CONDITIONAL([WANT_LIBBITFURY], [test x$want_libbitfury != xfalse])
@@ -976,6 +994,12 @@ if test "x$modminer" = xyes; then
 	echo "  ModMiner.FPGAs.......: Enabled"
 else
 	echo "  ModMiner.FPGAs.......: Disabled"
+fi
+
+if test "x$gridseed" = xyes; then
+        echo "  GridSeed.ASICs.......: Enabled"
+else
+        echo "  GridSeed.ASICs.......: Disabled"
 fi
 
 #Add any new device to this, along with a no on the end of the test

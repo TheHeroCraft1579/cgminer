@@ -32,7 +32,7 @@
 	defined(USE_MINION) || defined(USE_COINTERRA) || defined(USE_BITMINE_A1) || \
 	defined(USE_ANT_S1) || defined(USE_ANT_S2) || defined(USE_ANT_S3) || defined(USE_SP10) || \
 	defined(USE_SP30) || defined(USE_ICARUS) || defined(USE_HASHRATIO) || defined(USE_AVALON_MINER) || \
-	defined(USE_AVALON7) || defined(USE_AVALON8) || defined(USE_BITMAIN_SOC)
+	defined(USE_AVALON7) || defined(USE_AVALON8) || defined(USE_BITMAIN_SOC) || defined(USE_GRIDSEED)
 #define HAVE_AN_ASIC 1
 #endif
 
@@ -161,6 +161,7 @@ static const char *TRUESTR = "true";
 static const char *FALSESTR = "false";
 
 static const char *SHA256STR = "sha256";
+static const char *SCRYPTSTR = "scrypt";
 
 static const char *DEVICECODE = ""
 #ifdef USE_ANT_S1
@@ -213,6 +214,9 @@ static const char *DEVICECODE = ""
 #endif
 #ifdef USE_MINION
 			"MBA "
+#endif
+#ifdef USE_GRIDSEED
+                        "GSD "
 #endif
 #ifdef USE_MODMINER
 			"MMQ "
@@ -2050,6 +2054,20 @@ static void ascstatus(struct io_data *io_data, int asc, bool isjson, bool precom
 		root = api_add_mhs(root, "MHS 1m", &cgpu->rolling1, false);
 		root = api_add_mhs(root, "MHS 5m", &cgpu->rolling5, false);
 		root = api_add_mhs(root, "MHS 15m", &cgpu->rolling15, false);
+		if (opt_scrypt) {
+                        double mhs = (cgpu->total_mhashes / dev_runtime) * 1000;
+                        double mhs_rolling = cgpu->rolling * 1000;
+                        double mhs_rolling1 = cgpu->rolling1 * 1000;
+                        double mhs_rolling5 = cgpu->rolling5 * 1000;
+                        double mhs_rolling15 = cgpu->rolling15 * 1000;
+                        root = api_add_mhs(root, "MHS av", &mhs, true);
+                        char mhsname[27];
+                        sprintf(mhsname, "MHS %ds", opt_log_interval);
+                        root = api_add_mhs(root, mhsname, &mhs_rolling, true);
+                        root = api_add_mhs(root, "MHS 1m", &mhs_rolling1, true);
+                        root = api_add_mhs(root, "MHS 5m", &mhs_rolling5, true);
+                        root = api_add_mhs(root, "MHS 15m", &mhs_rolling15, true);
+                }
 		root = api_add_int(root, "Accepted", &(cgpu->accepted), false);
 		root = api_add_int(root, "Rejected", &(cgpu->rejected), false);
 		root = api_add_int(root, "Hardware Errors", &(cgpu->hw_errors), false);
@@ -2631,6 +2649,7 @@ static void summary(struct io_data *io_data, __maybe_unused SOCKETTYPE c, __mayb
 	root = api_add_mhs(root, "MHS 1m", &rolling1, false);
 	root = api_add_mhs(root, "MHS 5m", &rolling5, false);
 	root = api_add_mhs(root, "MHS 15m", &rolling15, false);
+
 	root = api_add_uint(root, "Found Blocks", &(found_blocks), true);
 	root = api_add_int64(root, "Getworks", &(total_getworks), true);
 	root = api_add_int64(root, "Accepted", &(total_accepted), true);
@@ -3459,7 +3478,10 @@ static void minecoin(struct io_data *io_data, __maybe_unused SOCKETTYPE c, __may
 	message(io_data, MSG_MINECOIN, 0, NULL, isjson);
 	io_open = io_add(io_data, isjson ? COMSTR JSON_MINECOIN : _MINECOIN COMSTR);
 
-	root = api_add_const(root, "Hash Method", SHA256STR, false);
+	if (opt_scrypt)
+		root = api_add_const(root, "Hash Method", SCRYPTSTR, false);
+        else
+		root = api_add_const(root, "Hash Method", SHA256STR, false);
 
 	cg_rlock(&ch_lock);
 	root = api_add_timeval(root, "Current Block Time", &block_timeval, true);

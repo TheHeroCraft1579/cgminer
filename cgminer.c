@@ -124,6 +124,10 @@ char *curly = ":D";
 #endif
 
 
+#ifdef USE_GRIDSEED
+#include "driver-gridseed.h"
+#endif
+
 #ifdef USE_COINTERRA
 #include "driver-cointerra.h"
 #endif
@@ -205,6 +209,12 @@ int nDevs;
 #endif
 bool opt_restart = true;
 bool opt_nogpu;
+
+/* Edit */
+bool opt_sha256;
+#ifdef USE_SCRYPT
+bool opt_scrypt;
+#endif
 
 struct list_head scan_devices;
 static bool opt_display_devs;
@@ -339,6 +349,11 @@ char *opt_bitmain_voltage = BITMAIN_VOLTAGE_DEF;
 #endif
 #ifdef USE_HASHFAST
 static char *opt_set_hfa_fan;
+#endif
+#ifdef USE_GRIDSEED
+char *opt_gridseed_options = NULL;
+char *opt_gridseed_freq = NULL;
+char *opt_gridseed_override = NULL;
 #endif
 static char *opt_set_null;
 #ifdef USE_MINION
@@ -2018,6 +2033,18 @@ static struct opt_table opt_config_table[] = {
 	OPT_WITHOUT_ARG("--fix-protocol",
 			opt_set_bool, &opt_fix_protocol,
 			"Do not redirect to stratum protocol from GBT"),
+#ifdef USE_GRIDSEED
+	OPT_WITH_ARG("--gridseed-options",
+			opt_set_charp, NULL, &opt_gridseed_options,
+			"Set gridseed options: freq=N[,voltage=1][,led_off=1]"),
+	OPT_WITH_ARG("--gridseed-freq",
+			opt_set_charp, NULL, &opt_gridseed_freq,
+			"Set gridseed frequency per-device: serial=freq[,...]"),
+	OPT_WITH_ARG("--gridseed-override",
+			opt_set_charp, NULL, &opt_gridseed_override,
+			"Set any gridseed option per-device: serial:opt1=val1[,...][;serial=...]"),
+#endif
+
 #ifdef USE_HASHFAST
 	OPT_WITHOUT_ARG("--hfa-dfu-boot",
 			opt_set_bool, &opt_hfa_dfu_boot,
@@ -2233,6 +2260,14 @@ static struct opt_table opt_config_table[] = {
 	OPT_WITH_ARG("--suggest-diff",
 		     opt_set_intval, NULL, &opt_suggest_diff,
 		     "Suggest miner difficulty for pool to user (default: none)"),
+
+/* Edit */
+#ifdef USE_SCRYPT
+	OPT_WITHOUT_ARG("--scrypt",
+		     opt_set_bool, &opt_scrypt,
+		     "Use the scrypt algorithm for mining"),
+#endif
+
 #ifdef HAVE_SYSLOG_H
 	OPT_WITHOUT_ARG("--syslog",
 			opt_set_bool, &use_syslog,
@@ -2525,11 +2560,19 @@ static char *opt_verusage_and_exit(const char *extra)
 #ifdef USE_BITMINE_A1
 		"Bitmine.A1 "
 #endif
+#ifdef USE_GRIDSEED
+		"GridSeed "
+#endif
 #ifdef USE_SP10
 		"spondoolies "
 #endif
 #ifdef USE_SP30
         "sp30 "
+#endif
+
+/* Edit */
+#ifdef USE_SCRYPT
+		"scrypt "
 #endif
 
 		"mining support.\n"
@@ -4307,6 +4350,9 @@ static double diff_from_target(void *target)
 	double d64, dcut64;
 
 	d64 = truediffone;
+	/* Edit */
+	if (opt_scrypt)
+		d64 *= (double)65536;
 	dcut64 = le256todouble(target);
 	if (unlikely(!dcut64))
 		dcut64 = 1;
@@ -5145,6 +5191,9 @@ uint64_t share_diff(const struct work *work)
 	uint64_t ret;
 
 	d64 = truediffone;
+	/* Edit */
+	if (opt_scrypt)
+		d64 *= (double)65536;
 	s64 = le256todouble(work->hash);
 	if (unlikely(!s64))
 		s64 = 0;
@@ -10385,8 +10434,14 @@ int main(int argc, char *argv[])
 	if (!config_loaded)
 		load_default_config();
 
+	if (!opt_sha256 && !opt_scrypt)
+		early_quit(1, "Must explicitly specify mining algorithm (--sha256 or --scrypt)");
+
 	if (opt_benchmark || opt_benchfile) {
 		struct pool *pool;
+
+		if (opt_scrypt)
+			early_quit(1, "Cannot use benchmark mode with scrypt");
 
 		pool = add_pool();
 		pool->rpc_url = cgmalloc(255);

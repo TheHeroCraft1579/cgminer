@@ -268,6 +268,7 @@ static inline int fsync (int fd)
 	DRIVER_ADD_COMMAND(minion) \
 	DRIVER_ADD_COMMAND(sp10) \
 	DRIVER_ADD_COMMAND(sp30) \
+	DRIVER_ADD_COMMAND(gridseed) \
 	DRIVER_ADD_COMMAND(bitmain_soc)
 
 #define DRIVER_PARSE_COMMANDS(DRIVER_ADD_COMMAND) \
@@ -473,6 +474,7 @@ struct cgpu_info {
 	unsigned char clock;
 	pthread_mutex_t *modminer_mutex;
 #endif
+
 #ifdef USE_BITFORCE
 	struct timeval work_start_tv;
 	unsigned int wait_ms;
@@ -1097,6 +1099,11 @@ extern int opt_minion_spisleep;
 extern int opt_minion_spiusec;
 extern char *opt_minion_temp;
 #endif
+#ifdef USE_GRIDSEED
+extern char *opt_gridseed_options;
+extern char *opt_gridseed_freq;
+extern char *opt_gridseed_override;
+#endif
 #ifdef USE_USBUTILS
 extern char *opt_usb_select;
 extern int opt_usbdump;
@@ -1185,6 +1192,12 @@ extern struct pool *add_pool(void);
 extern bool add_pool_details(struct pool *pool, bool live, char *url, char *user, char *pass);
 
 #define MAX_DEVICES 4096
+
+#ifdef USE_SCRYPT
+extern bool opt_scrypt;
+#else
+#define opt_scrypt (0)
+#endif
 
 extern bool hotplug_mode;
 extern int hotplug_time;

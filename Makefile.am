@@ -212,6 +212,11 @@ bitstreamsdir = $(bindir)/bitstreams
 dist_bitstreams_DATA = $(top_srcdir)/bitstreams/README
 endif
 
+if HAS_GRIDSEED
+cgminer_SOURCES += driver-gridseed.c driver-gridseed.h
+endif
+
+
 if HAS_BLOCKERUPTER
 cgminer_SOURCES += driver-blockerupter.c driver-blockerupter.h
 endif
